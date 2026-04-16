@@ -8,7 +8,7 @@ Create AL tests for the following context: $ARGUMENTS
 
 ## Steps
 
-1. **Read the project config** — read `app/app.json` to get the mandatory affix and app object ID range, and `test/app.json` to get the test app object ID range. If either file does not exist, stop and tell the user.
+1. **Read the project config** — read `app/app.json` to get the mandatory affix and app object ID range, and `test/app.json` to get the test app object ID range. If either file does not exist, stop and tell the user. Also check whether `test/AppSourceCop.json` exists — if it does not, create it with the same `mandatoryAffixes` and `supportedCountries` values as the main app (read `app/AppSourceCop.json` to get these).
 
 2. **Explore the test directory** — list all `.al` files in `test/`. For each test codeunit found, read it and note:
    - The codeunit name and number
@@ -29,7 +29,10 @@ Create AL tests for the following context: $ARGUMENTS
    - Extract setup and teardown into `local procedure` helpers — keep test procedure bodies concise
    - Declare variables inside the procedure body, not at codeunit level
    - Use `Assert` codeunit for assertions
-   - Use Microsoft Test Library codeunits where appropriate (e.g. `Library - Purchase`, `Library - ERM`, `Library - Variable Storage`) — if a library is used that isn't already a dependency in `test/app.json`, flag it to the user
+   - Every `asserterror` must be immediately followed by `Assert.ExpectedError(...)` — a bare `asserterror` with no assertion is not acceptable as it will pass for any error, including unexpected ones
+   - BC `TestField` errors include the full primary key in the message (e.g. `"Status must be equal to 'Released'  in Purchase Header: Document Type=Order,No.=PO001."`); use `StrSubstNo` to build the expected string so the primary key value is included: `Assert.ExpectedError(StrSubstNo('Status must be equal to ''Released''  in Purchase Header: Document Type=Order,No.=%1.', PurchaseHeader."No."))`
+   - Never create ledger entries via direct record inserts — always post through the related journal (e.g. Gen. Journal Line) or document (e.g. purchase/sales order) so that the full posting routine runs
+   - Use Microsoft Test Library codeunits where appropriate (e.g. `Library - Purchase`, `Library - ERM`, `Library - Variable Storage`) — these all ship in the `Tests-TestLibraries` app (publisher: Microsoft, id: `5d86850b-0d76-4eca-bd7b-951ad998e997`); before writing any test that uses them, check `test/app.json` and if `Tests-TestLibraries` is not already listed as a dependency, add it using the same version as the `application` field in `app/app.json`
    - All custom object/field/procedure names must end with the mandatory affix (e.g. `OOO`)
    - Object names must not exceed 30 characters including the affix
    - Captions omit the affix
